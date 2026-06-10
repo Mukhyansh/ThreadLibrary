@@ -3,21 +3,12 @@
 #include<string.h>
 #include<malloc.h>
 #include<stdbool.h>
+#include<unistd.h>
 
 typedef struct node{
     int data;
     struct node* next;
 }node;
-
-int leng(node* head){
-    node* temp=head;
-    int count=0;
-    while(temp){
-        temp=temp->next;
-        count++;
-    }
-    return count;
-}
 
 node* insertatbegin(node* head,int val){
     node* temp=(node*)malloc(sizeof(node));
@@ -107,13 +98,17 @@ node* deletefromend(node* head){
         printf("Underflow!\n");
         exit(0);
     }
+    else if(!head->next){
+        free(head);
+        return NULL;
+    }
     else{
         node* t=head;
         while(t->next->next){
             t=t->next;
         }
         free(t->next);
-        t->next=t->next->next;
+        t->next=NULL;
     }
     return head;
 }
@@ -147,68 +142,6 @@ node* deletefrompos(node* head,int x){
     return head;
 }
 
-node* merge(node* head1,node* head2){
-    node* dum=(node*)malloc(sizeof(node));
-    dum->next=NULL;
-    if(!head1){
-        return head2;
-    }
-    if(!head2){
-        return head1;
-    }
-        node* t1=head1;
-        node* t2=head2;
-        node* tail=dum;
-        while(t1 && t2){
-            if(t1->data <= t2->data){
-                tail->next=t1;
-                t1=t1->next;
-                tail=tail->next;
-            }
-            else{
-                tail->next=t2;
-                t2=t2->next;
-                tail=tail->next;
-            }
-        }
-        if(t1) tail->next=t1;
-        else if(t2) tail->next=t2;
-
-
-    node* result=dum->next;
-    free(dum);
-    return result;
-}
-
-node* rotate(node* head,int k){
-    node* newhead;
-    // k=k%leng(head);
-    if(k==0){
-        return head;
-    }
-    if(!head){
-        printf("Underflow!\n");
-        exit(0);
-    }
-    else{
-        int i=0;
-        node* t1=head;
-        while(i<k){
-            t1=t1->next;
-            i++;
-        }
-        node* t2=head;
-        while(t2->next){
-            t2=t2->next;
-        }
-        newhead=t1->next;
-        t1->next=NULL;
-        t2->next=head;
-    }
-    return newhead;
-}
-
-
 node* turntocircular(node* head){
     node* temp=head;
     while(temp->next){
@@ -225,7 +158,7 @@ void display(node* head){
     }
     else{
         node* temp=head;
-        while(temp){
+        while(temp->next!=head){
             printf("%d ",temp->data);
             temp=temp->next;
         }
@@ -233,18 +166,14 @@ void display(node* head){
     }
 }
 
-node* deletefromsorted(node* head){
+int leng(node* head){
+    int count=0;
     node* temp=head;
-    while(temp->next!=NULL){
-        if(temp->data==temp->next->data){
-            node* del=temp->next;
-            temp->next=temp->next->next;
-            free(del);
-        }
-        else
+    while(temp){
+        count++;
         temp=temp->next;
     }
-    return head;
+    return count;
 }
 
 int main(){
