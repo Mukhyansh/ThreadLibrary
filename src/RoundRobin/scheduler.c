@@ -1,4 +1,4 @@
-#include "list.h"
+#include "../STL/list.h"
 
 int main(int argc,char* argv[]){
     node* head=NULL;
