@@ -3,47 +3,68 @@
 #include <string.h>
 #include <unistd.h>
 
+typedef struct node{
+    void* data;
+    struct node* next;
+}node;
+
 typedef struct{
-    void* arr[8096];
-    int front;
-    int end;
+    node* head;
+    node* tail;
 }queue;
 
 queue* init(){
     queue* q=(queue*)malloc(sizeof(queue));
-    q->front=0;
-    q->end=0;
+    q->head=NULL;
+    q->tail=NULL;
     return q;
 }
 
 void push(queue* q,void* ch){
-    if((q->end+1)%8096==q->front){
-        puts("Queue full!");
-        return;
+    node* newNode=(node*)malloc(sizeof(node));
+    newNode->data=ch;
+    newNode->next=NULL;
+    
+    if(q->tail==NULL){
+        q->head=newNode;
+        q->tail=newNode;
+    }else{
+        q->tail->next=newNode;
+        q->tail=newNode;
     }
-    q->arr[q->end]=ch;
-    q->end=(q->end+1)%8096;
 }
 
 void* pop(queue* q){
-    if(q->front==q->end){
+    if(q->head==NULL){
         puts("Queue empty!");
         return NULL;
     }
-    void* data=q->arr[q->front];
-    q->front=(q->front+1)%8096;
+    void* data=q->head->data;
+    node* temp=q->head;
+    q->head=q->head->next;
+    
+    if(q->head==NULL){
+        q->tail=NULL;
+    }
+    
+    free(temp);
     return data;
 }
 
 void* front(queue* q){
-    if(q->front==q->end){
+    if(q->head==NULL){
         puts("Queue empty!");
         return NULL;
     }
-    return q->arr[q->front];
+    return q->head->data;
 }
 
 void freeQueue(queue* q){
+    while(q->head!=NULL){
+        node* temp=q->head;
+        q->head=q->head->next;
+        free(temp);
+    }
     free(q);
 }
 

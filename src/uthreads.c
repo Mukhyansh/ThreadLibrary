@@ -1,33 +1,17 @@
-#include<stdio.h>
-#include<ucontext.h>
-#include<stdlib.h>
-#include<unistd.h>
-// #include<pthread.h> will include it for testing against user-threads
-#include<time.h>
-#include<stdbool.h>
+#include"uthreads.h"
 
-typedef long long ll;
-typedef unsigned int uint;
-
-typedef enum{
-    READY=0,
-    RUNNING=1,
-    BLOCKED=2,
-    FINISHED=3
-}state;
-
-typedef struct{
-    
-}umutex;
-
-typedef struct{
-    int tid;
-    state curr;
-    ucontext_t* context;
-    bool mutexed;
-    char* stack;
-    long time_taken;
-    long curr_time;
-}thread;
+void init();
+void thread_create(int tid,tcb* th);
+void thread_join(int tid,tcb* th);
+void thread_yield(int tid,tcb* th);
+void thread_terminate(int tid,tcb* th);
+void interrupt_handler();
 
 
+tcb* main_thread;
+ucontext_t* scheduler_context;
+ucontext_t* finished_context;
+tcb* running_thread;
+
+int mutex_count=0;
+int thread_count;
