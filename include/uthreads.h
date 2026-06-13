@@ -24,11 +24,11 @@ typedef struct{
 }umutex;
 
 typedef struct{
-    int tid;
+    int id;
     state curr;
     ucontext_t* context;
     bool mutexed;
-    uint size;
+    void* size_of_stack;
     void* stack;
     long time_taken;
     long curr_time;

@@ -1,4 +1,4 @@
-#include "../STL/list.h"
+#include "../include/list.h"
 
 int main(int argc,char* argv[]){
     node* head=NULL;
@@ -6,3 +6,5 @@ int main(int argc,char* argv[]){
     scanf("%d",&nprocess);
     return EXIT_SUCCESS;
 }
+
+//INCOMPLETE
