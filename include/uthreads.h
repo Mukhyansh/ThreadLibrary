@@ -28,6 +28,8 @@ typedef struct{
     state curr;
     ucontext_t* context;
     bool mutexed;
+    int waiting_thread;
+    int waiting_for;
     void* size_of_stack;
     void* stack;
     long time_taken;

@@ -46,8 +46,12 @@ int thread_create(int tid){
         main_thread->stack=main_thread->context->uc_stack.ss_sp;
         main_thread->context->uc_link=finished_context;
         main_thread->curr=RUNNING;
+        main_thread->mutexed=false;
+        main_thread->waiting_thread=-1;
+        main_thread->waiting_for=-1;
+        main_thread->time_taken=0;
         
-        // active_threads++;
+        active_threads++;
 
     }
     else{
