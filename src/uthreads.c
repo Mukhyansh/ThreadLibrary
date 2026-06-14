@@ -3,14 +3,18 @@
 #include"include/queue.h"
 #include"include/stack.h"
 
+
 void init(); //starts everything
 void thread_wrapper(void*(*start)(void*),void* arg); //kinda like a boilerplate for all the benchmarks
 int thread_create(int tid,void*(*function)(void*),void*(arg));
 void thread_join(int tid,tcb* th);
-void thread_yield(int tid,tcb* th);
-void thread_terminate(int tid);
+void thread_yield(int tid);
+void thread_exit(void* value);
+void thread_terminate();
 void interrupt_handler();
 int fire_timer(int time_slice);
+void schedule();
+void scheduler_roundrobin();
 
 tcb* main_thread;
 struct itimerval timer_val; // stores the timestamps for creation,first_run and completion.
@@ -26,19 +30,20 @@ int mutex_count=0;
 int tid=1; // thread id
 int thread_count=0;
 int active_threads=0;
+void* returnables[MAX];
 
 void thread_wrapper(void*(*start)(void*),void* arg){
     start((void*)arg);
     printf("Thread with the ID %d exiting!\n",running_thread->id);
-    thread_terminate(running_thread->id);
+    thread_terminate();
 }
 
 int fire_timer(int time_slice){
-    timer_val.it_value.tv_sec=0;
-    timer_val.it_value.tv_usec=(time_slice*1000) % 100000;
+    timer_val.it_value.tv_sec = time_slice / 1000;
+    timer_val.it_value.tv_usec = (time_slice % 1000) * 1000;
     //  Convert to microseconds as itimer accepts microseconds not milli
-    timer_val.it_interval.tv_sec=0;
-    timer_val.it_interval.tv_usec=(time_slice*1000) % 100000;
+    timer_val.it_interval.tv_sec = time_slice / 1000;
+    timer_val.it_interval.tv_usec = (time_slice % 1000) * 1000;
 
     if(setitimer(ITIMER_PROF, &timer_val,NULL)==-1){
         puts("Setting up the timer failed!");
@@ -70,11 +75,13 @@ int thread_create(int thid,void*(*function)(void*),void*(arg)){
         }
 
         main_thread->stack=main_thread->context->uc_stack.ss_sp;
-        //We are using the program's default'ly (i invented this word)
-        //allocated stack for the first initial thread for better 
-        //understanding. 
-        //We can create stack for the initial thread as well using malloc
-        //and it would'nt make a difference!
+        /*
+        We are using the program's default'ly (i invented this word)
+        allocated stack for the first initial thread for better 
+        understanding. 
+        We can create stack for the initial thread as well using malloc
+        and it would'nt make a difference!
+        */
         main_thread->context->uc_link=finished_context;
         main_thread->curr=RUNNING;
         main_thread->mutexed=false;
@@ -85,9 +92,13 @@ int thread_create(int thid,void*(*function)(void*),void*(arg)){
         gettimeofday(&main_thread->created_time,NULL); 
         gettimeofday(&main_thread->start_time,NULL);
 
+        main_thread->curr=RUNNING;
+        running_thread=main_thread;
+
         turnaround_avg=0; 
         response_avg=0; 
         active_threads++;
+        thread_count++;
         // fire_timer(TIME_SLICE); //Will call this during init as this is causing the threads to loop back around infinitely
     }
     //  **When more than 1 thread!**
@@ -116,6 +127,7 @@ int thread_create(int thid,void*(*function)(void*),void*(arg)){
 	}
 
     thread->context->uc_stack.ss_sp=thread->stack;  
+    thread->context->uc_link = finished_context;
 	thread->context->uc_stack.ss_size=8096;
     thread->context->uc_stack.ss_flags=0;
 	thread->waiting_thread=-1;
@@ -128,9 +140,92 @@ int thread_create(int thid,void*(*function)(void*),void*(arg)){
     turnaround_avg=0; 
     response_avg=0; 
     active_threads++;
+    thread_count++;
     
     enqueue(ready_q,thread);
 
-    makecontext(&thread->context,(void*)thread_wrapper,2,function,arg);
+    makecontext(thread->context,(void*)thread_wrapper,2,function,arg);
     return thread->id;
 }
+
+void init(){
+    // Initialize the ready and waiting queue for the round robin scheduler!
+    ready_q=queue_init();
+    waiting_q=queue_init();
+
+    // Initialize the context for scheduler.
+    scheduler_context=(ucontext_t*)malloc(sizeof(ucontext_t));
+    scheduler_context->uc_stack.ss_sp=(void*)malloc(8096);
+    if(getcontext(scheduler_context)==-1){
+        puts("Failed the initialization for scheduler's context!");
+        return;
+    }
+    scheduler_context->uc_link=0;
+    scheduler_context->uc_stack.ss_size=8096;
+    scheduler_context->uc_stack.ss_flags=0;
+
+    makecontext(scheduler_context,(void*)&schedule,0);
+
+    //initialize the finished context
+    finished_context=(ucontext_t*)malloc(sizeof(ucontext_t));
+    finished_context->uc_stack.ss_sp=(void*)malloc(8096);
+    if(getcontext(finished_context)==-1){
+        puts("Failed the initialization of the finished context!");
+        return;
+    }
+    finished_context->uc_link=0;
+    finished_context->uc_stack.ss_size=8096;
+    finished_context->uc_stack.ss_flags=0;
+
+    makecontext(finished_context,(void*)&thread_terminate,0);
+}
+
+void thread_terminate(){
+    printf("Exiting with last thread id %d.\n",running_thread->id);
+    running_thread->curr=FINISHED;
+    active_threads--;
+    schedule();
+}
+
+/* 
+This will be called by the time handler/timer (idk)
+and will work as an automatic yield function
+*/ 
+
+// Preemptive
+void interrupt_handler(int signum){
+    if(running_thread==NULL){
+        puts("Running thread is not initialized yet!");
+        return;
+    }
+    if(swapcontext(running_thread->context,scheduler_context)==-1){
+        puts("Error switching context from thread to scheduler!");
+        exit(-1);
+    }
+}
+ 
+/* 
+The Yield function is for manual yielding  but we might not need it 
+as we have built a timer which will fire every 20 ms and call interrupt handler. 
+*/
+
+// Cooperative
+void thread_yield(int tid){ 
+    swapcontext(running_thread->context,scheduler_context);
+    return;
+}
+
+// Manually terminate a thread
+void thread_exit(void* value){
+    if(running_thread->curr!=RUNNING){
+        puts("Something is wrong in the supposedly running thread!");
+        exit(-1);
+    }
+    running_thread->curr=FINISHED;
+    if(!value){
+        returnables[running_thread->id]=value;
+    }
+    printf("Exiting thread with the id %d.\n",running_thread->id);
+    worker_yield();
+}
+

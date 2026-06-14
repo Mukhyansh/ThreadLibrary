@@ -4,6 +4,7 @@
 #include<stdio.h>
 #include<ucontext.h>
 #include<stdlib.h>
+#include <signal.h>
 #include<unistd.h>
 #include<time.h>
 // #include<pthread.h> will include it for testing against user-threads
@@ -12,6 +13,7 @@
 #include<sys/time.h>
 #include<sys/types.h>
 #define TIME_SLICE 20
+#define MAX 256
 
 typedef long long ll;
 typedef unsigned int uint;
@@ -27,7 +29,7 @@ typedef struct{
     
 }umutex;
 
-typedef struct{
+typedef struct tcb{
     int id;
     state curr;
     ucontext_t* context;
@@ -37,10 +39,10 @@ typedef struct{
     void* size_of_stack;
     void* stack;
     long time_taken;
-    long start_time;
-    long finish_time;
-    long created_time;
-    tcb* next_node;
+    struct timeval start_time;
+    struct timeval finish_time;
+    struct timeval created_time;
+    struct tcb* next_node;
 }tcb;
 
 

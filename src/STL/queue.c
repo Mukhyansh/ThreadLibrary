@@ -2,68 +2,57 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "../include/uthreads.h"
+#include "../include/queue.h"
 
-typedef struct node{
-    void* data;
-    struct node* next;
-}node;
 
-typedef struct{
-    node* head;
-    node* tail;
-}queue;
-
-queue* init(){
+queue* queue_init(){
     queue* q=(queue*)malloc(sizeof(queue));
     q->head=NULL;
     q->tail=NULL;
     return q;
 }
 
-void push(queue* q,void* ch){
-    node* newNode=(node*)malloc(sizeof(node));
-    newNode->data=ch;
-    newNode->next=NULL;
-    
-    if(q->tail==NULL){
-        q->head=newNode;
-        q->tail=newNode;
-    }else{
-        q->tail->next=newNode;
-        q->tail=newNode;
+void empty_queue(queue* q){
+	q->head=NULL;
+	q->tail=NULL;
+}
+
+void enqueue(queue* q, tcb* thread){
+    thread->next_node = NULL;
+    if (q->head==NULL) {
+        q->head=thread;
+        q->tail=thread;
+    } else {
+        q->tail->next_node=thread;
+        q->tail=thread;
     }
 }
 
-void* pop(queue* q){
+tcb* dequeue(queue* q){
     if(q->head==NULL){
-        puts("Queue empty!");
         return NULL;
     }
-    void* data=q->head->data;
-    node* temp=q->head;
-    q->head=q->head->next;
-    
+    tcb* thread=q->head;
+    q->head=q->head->next_node;
     if(q->head==NULL){
         q->tail=NULL;
     }
-    
-    free(temp);
-    return data;
+    return thread;
 }
 
-void* front(queue* q){
+tcb* front(queue* q){
     if(q->head==NULL){
         puts("Queue empty!");
         return NULL;
     }
-    return q->head->data;
+    return q->head;
 }
 
 void freeQueue(queue* q){
     while(q->head!=NULL){
-        node* temp=q->head;
-        q->head=q->head->next;
-        free(temp);
+        tcb* temp=q->head;
+        q->head=q->head->next_node;
     }
     free(q);
 }

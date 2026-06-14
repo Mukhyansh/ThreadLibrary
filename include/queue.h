@@ -1,16 +1,17 @@
 #ifndef QUEUE_H
 #define QUEUE_H
+#include "uthreads.h"
 
-typedef struct{
-    void* arr[8096];
-    int front;
-    int end;
-}queue;
+typedef struct {
+    tcb* head;
+    tcb* tail;
+} queue;
 
-queue* init();
-void push(queue* q,void* ch);
-void* pop(queue* q);
-void* front(queue* q);
+queue* queue_init();
+void enqueue(queue* q, tcb* thread);
+tcb* dequeue(queue* q);
+tcb* front(queue* q);
 void freeQueue(queue* q);
+void empty_queue(queue* q);
 
 #endif
