@@ -40,7 +40,7 @@ typedef struct{
     long start_time;
     long finish_time;
     long created_time;
-    tcb* next;
+    tcb* next_node;
 }tcb;
 
 
