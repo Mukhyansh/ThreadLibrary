@@ -1,11 +1,7 @@
 #include"include/uthreads.h"
-#include"include/list.h"
-#include"include/queue.h"
-#include"include/stack.h"
-
 
 void init(); //starts everything
-void thread_wrapper(void*(*start)(void*),void* arg); //kinda like a boilerplate for all the benchmarks
+void thread_wrapper(void*(*start)(void*),void* arg); //kinda like a boilerplate for all the Metrics
 int thread_create(int tid,void*(*function)(void*),void*(arg));
 void thread_join(int tid,tcb* th);
 void thread_yield(int tid);
@@ -14,14 +10,16 @@ void thread_terminate();
 void interrupt_handler();
 int fire_timer(int time_slice);
 void schedule();
+struct timeval schedule_timestamp;
 void scheduler_roundrobin();
+void find_ready_threads(int thid,tcb** return_value,queue* ready_q);
 
 tcb* main_thread;
 struct itimerval timer_val; // stores the timestamps for creation,first_run and completion.
-queue* ready_q; //queue for round robin
-queue* waiting_q;
-ucontext_t* scheduler_context;
-ucontext_t* finished_context;
+queue* ready_q; //queue for round robin (running)
+queue* waiting_q; //queue for round robin (ready)
+ucontext_t* scheduler_context; //context for the scheduler
+ucontext_t* finished_context; //context for something after a thread has finished executing
 tcb* running_thread;
 
 static double turnaround_avg; // completion time - start time
@@ -94,6 +92,7 @@ int thread_create(int thid,void*(*function)(void*),void*(arg)){
 
         main_thread->curr=RUNNING;
         running_thread=main_thread;
+        gettimeofday(&schedule_timestamp, NULL);
 
         turnaround_avg=0; 
         response_avg=0; 
@@ -229,3 +228,32 @@ void thread_exit(void* value){
     worker_yield();
 }
 
+// Gets assigned the scheduled context and calls the required scheduler for the rescheduling of the threads!
+void schedule(){
+    gettimeofday(&running_thread->finish_time,NULL);
+
+    double time_ms;
+	time_ms=(double)(running_thread->finish_time.tv_sec-schedule_timestamp.tv_sec)*1000;
+
+	if(time_ms == 0){
+		time_ms+=(double)(running_thread->finish_time.tv_usec-schedule_timestamp.tv_usec) / 1000;
+	}
+    else{
+		time_ms-=1000;
+		time_ms+=(double)((1000000-schedule_timestamp.tv_usec)+running_thread->finish_time.tv_usec) / 1000;
+	}
+    running_thread->time_taken+=time_ms;
+    scheduler_roundrobin(running_thread->context);
+}
+
+//Stores the same id threads in return_value.
+void find_ready_thread(int thid,tcb** return_value,queue* ready_queue){
+    tcb* temp=ready_queue->head;
+    while(temp){
+        if(temp->id==thid){
+            *return_value=temp;
+            break;
+        }
+        temp=temp->next_node;
+    }
+}
