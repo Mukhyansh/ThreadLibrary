@@ -9,7 +9,7 @@ typedef struct {
 
 queue* queue_init();
 void enqueue(queue* q, tcb* thread);
-tcb* dequeue(queue* q);
+void dequeue(queue* q,tcb** pop_thread);
 tcb* front(queue* q);
 void freeQueue(queue* q);
 void empty_queue(queue* q);

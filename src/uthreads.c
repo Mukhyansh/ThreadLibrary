@@ -257,3 +257,26 @@ void find_ready_thread(int thid,tcb** return_value,queue* ready_queue){
         temp=temp->next_node;
     }
 }
+
+void schedule(){
+    tcb* next_thread=NULL;
+    tcb* prev_thread=running_thread;
+
+    if(prev_thread->curr==FINISHED){
+        free_threads(prev_thread);
+        free(prev_thread);
+    }
+    else{
+        prev_thread->curr=READY;
+        enqueue(ready_q,prev_thread);
+    }
+    dequeue(ready_q,&next_thread);
+    if(next_thread==NULL){
+        puts("There are no ready threads anymore!");
+        exit(0);
+    }
+    next_thread->curr=RUNNING;
+    running_thread=next_thread;
+    init_timer(TIME_SLICE);
+    setcontext(next_thread->context);
+}

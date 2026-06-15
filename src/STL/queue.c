@@ -29,16 +29,20 @@ void enqueue(queue* q, tcb* thread){
     }
 }
 
-tcb* dequeue(queue* q){
+void dequeue(queue* q,tcb** pop_node){
     if(q->head==NULL){
         return NULL;
     }
-    tcb* thread=q->head;
-    q->head=q->head->next_node;
-    if(q->head==NULL){
+    *pop_node=q->head;
+    tcb* thread=q->head->next_node;
+    q->head->next_node=NULL;
+    if(q->head==q->tail){
         q->tail=NULL;
+        q->head=NULL;
     }
-    return thread;
+    else{
+        q->head=thread;
+    }
 }
 
 tcb* front(queue* q){
