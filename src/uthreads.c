@@ -78,7 +78,7 @@ int thread_create(int thid,void*(*function)(void*),void*(arg)){
         allocated stack for the first initial thread for better 
         understanding. 
         We can create stack for the initial thread as well using malloc
-        and it would'nt make a difference!
+        and it wouldn't make a difference!
         */
         main_thread->context->uc_link=finished_context;
         main_thread->curr=RUNNING;
@@ -204,7 +204,7 @@ void interrupt_handler(int signum){
 }
  
 /* 
-The Yield function is for manual yielding  but we might not need it 
+The Yield function is for manual yielding but we might not need it 
 as we have built a timer which will fire every 20 ms and call interrupt handler. 
 */
 
@@ -221,7 +221,7 @@ void thread_exit(void* value){
         exit(-1);
     }
     running_thread->curr=FINISHED;
-    if(!value){
+    if(value!=NULL){
         returnables[running_thread->id]=value;
     }
     printf("Exiting thread with the id %d.\n",running_thread->id);
