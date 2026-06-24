@@ -1,4 +1,4 @@
-#include"include/uthreads.h"
+#include"../include/uthreads.h"
 
 void init(); //starts everything
 void thread_wrapper(void*(*start)(void*),void* arg); //kinda like a boilerplate for all the Metrics
@@ -14,6 +14,8 @@ struct timeval schedule_timestamp;
 void scheduler_roundrobin();
 void find_ready_thread(int thid,tcb** return_value,queue* ready_q);
 
+tcb* all_threads[MAX]; //Useful for the join function , explained below
+int completed[MAX]; //Useful for the join function, explained below
 tcb* main_thread;
 struct itimerval timer_val; // stores the timestamps for creation,first_run and completion.
 queue* ready_q; //queue for round robin (running)
@@ -91,6 +93,7 @@ int thread_create(int thid,void*(*function)(void*),void*(arg)){
         main_thread->waiting_thread=-1;
         main_thread->waiting_for=-1;
         main_thread->time_taken=0;
+        all_threads[main_thread->id]=main_thread;
 
         gettimeofday(&main_thread->created_time,NULL); 
         gettimeofday(&main_thread->start_time,NULL);
@@ -138,6 +141,7 @@ int thread_create(int thid,void*(*function)(void*),void*(arg)){
 	thread->waiting_for=-1;  
     thread->time_taken=0;
     thread->mutexed=false;
+    all_threads[thread->id]=thread;
     gettimeofday(&thread->created_time,NULL);
     gettimeofday(&thread->start_time, NULL);  
 
@@ -146,9 +150,9 @@ int thread_create(int thid,void*(*function)(void*),void*(arg)){
     active_threads++;
     thread_count++;
     
-    enqueue(ready_q,thread);
-
     makecontext(thread->context,(void*)thread_wrapper,2,function,arg);
+    
+    enqueue(ready_q,thread);
     return thread->id;
 }
 
@@ -267,8 +271,31 @@ void scheduler_roundrobin(){
     tcb* prev_thread=running_thread;
 
     if(prev_thread->curr==FINISHED){
-        free_threads(prev_thread);
-        free(prev_thread);
+        int finished_id=prev_thread->id;
+
+        if(prev_thread->waiting_thread!=-1){
+            tcb* joiner=NULL;
+            remove(waiting_q,prev_thread->waiting_thread,&joiner);
+
+            if(joiner!=NULL){
+                joiner->curr=READY;
+                joiner->waiting_for=-1;
+                enqueue(ready_q,joiner);
+            }
+        }
+        completed[finished_id] = 1;
+        all_threads[finished_id] = NULL;
+        active_threads--;
+
+        if (prev_thread != main_thread) {
+            free(prev_thread->stack);
+            free(prev_thread->context);
+            free(prev_thread);
+        }
+    }
+    else if(prev_thread->curr==BLOCKED){
+        //Likely to do nothing here
+        //I name this area of the code "The Thrib("thread crib)!
     }
     else{
         prev_thread->curr=READY;
@@ -281,13 +308,25 @@ void scheduler_roundrobin(){
     }
     next_thread->curr=RUNNING;
     running_thread=next_thread;
+    gettimeofday(&schedule_timestamp,NULL);
     fire_timer(TIME_SLICE);
     setcontext(next_thread->context);
 } 
 
 int thread_join(int tid,void** value_pointer,queue* ready_q){
     tcb* waiting_t=NULL;
-    find_ready_thread(tid,&waiting_t,ready_q);
+    /*
+    the find ready thread function was only looking the status(curr) of the threads inside the ready queue
+    but the threads we are looking for could very well be inside the waiting queue.
+    I mean, it still makes sense to implement a basic linear search for the waiting queue but I
+    think what I am doing will save a tad more time internally(idk).
+    
+    The `all_threads` memory block wil hold alll the threads therefore making it easy for me to lookup in O(1) time.
+
+    */
+    //find_ready_thread(tid,&waiting_t,ready_q);
+
+    waiting_t = all_threads[tid];
     if(waiting_t==NULL){
         if(tid<=thread_count){
             if(value_pointer!=NULL){

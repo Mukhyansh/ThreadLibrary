@@ -11,9 +11,9 @@
 #include<time.h>
 #include<stdbool.h>
 #include<sys/time.h>
-#include"include/list.h"
-#include"include/queue.h"
-#include"include/stack.h"
+#include"list.h"
+#include"queue.h"
+#include"stack.h"
 #include<sys/types.h>
 #define TIME_SLICE 20
 #define MAX 256
@@ -32,7 +32,7 @@ typedef enum{
 // MUTEX DECLARATION
 typedef struct umutex{
     bool locked; //check if mutex is locked or not
-    int id; //id if the mutex
+    int id; //id of the mutex
     int owner_id; // id of the thread inside critical zone
     queue* mutex_q; // waiting queue for the mutex
 }umutex;
