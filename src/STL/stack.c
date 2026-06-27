@@ -1,3 +1,5 @@
+//This was maybe used idk i forgot
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

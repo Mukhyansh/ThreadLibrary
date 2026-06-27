@@ -35,7 +35,7 @@ static double turnaround_avg; // completion time - start time
 static double response_avg; // first run time - created time
 static int mutex_count=0;
 static int interrupt_disabled=0; //gpt suggested this, idk what this does yet.
-//the upper variable is for disable and enablig signal function, thats all I know about it.
+//the upper variable is for disable and enable signal function, thats all I know about it.
 static int tid=1; // thread id
 static int thread_count=0;
 static int active_threads=0;

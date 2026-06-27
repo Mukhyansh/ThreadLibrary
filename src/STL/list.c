@@ -1,3 +1,5 @@
+//this was not used at all
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -181,4 +183,4 @@ int main(){
     node* head2=NULL;
     return 0;
 }
-
+ 
