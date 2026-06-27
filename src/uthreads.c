@@ -10,15 +10,19 @@ void thread_finished(); //I initially named it `thread_terminate` but that was c
 void interrupt_handler(int signum);
 int fire_timer(int time_slice); //Will fire a signal every 20ms.
 void schedule(); 
-struct timeval schedule_timestamp;
 void scheduler_roundrobin();
 int setup_handler();
 void find_ready_thread(int thid,tcb** return_value,queue* ready_q);
 void mutex_init(umutex* mtx);
+int mutex_unlock(umutex* mtx);
+int mutex_lock(umutex* mtx);
+int mutex_destroy(umutex* mtx);
 void unblock_threads_from_queue(umutex* mtx);
+void print_stats(queue* q); //filler function for inner insights~
 
 tcb* all_threads[MAX]; //Useful for the join function , explained below
 int completed[MAX]; //Useful for the join function, explained below
+struct timeval schedule_timestamp;
 tcb* main_thread;
 struct itimerval timer_val; // stores the timestamps for creation,first_run and completion.
 queue* ready_q; //queue for round robin (running)
@@ -210,6 +214,9 @@ and will work as an automatic yield function
 
 // Preemptive
 void interrupt_handler(int signum){
+    if(interrupt_disabled){
+        return;
+    }
     if(running_thread==NULL){
         puts("Running thread is not initialized yet!");
         return;
@@ -322,6 +329,7 @@ void scheduler_roundrobin(){
     setcontext(next_thread->context);
 } 
 
+// Joins another thread by pausing one and leetting the second continue till the end.
 int thread_join(int tid,void** value_pointer,queue* ready_q){
     tcb* waiting_t=NULL;
     /*
@@ -354,6 +362,12 @@ int thread_join(int tid,void** value_pointer,queue* ready_q){
     running_thread->waiting_for=waiting_t->id;
     enqueue(waiting_q,running_thread);
     thread_yield();
+
+    if(*value_pointer!=NULL){
+        *value_pointer=returnables[tid];
+    }
+
+    return 0;
 }
 
 int setup_handler(){
@@ -368,7 +382,7 @@ int setup_handler(){
     return 1;
 }
 
-//Self explanatory!
+//Self explanatory :/
 
 void disable_signal(){
     interrupt_disabled=1;
@@ -392,37 +406,34 @@ void mutex_init(umutex* mtx){
 }
 
 //Locks the mutex so that only one thread can access it at a time.
-int mutex_lock(umutex* mtx){
-    if(!mtx){
-        puts("Mutex was not initialized!");
-        exit(1);
+int mutex_lock(umutex *mtx){
+    if(mtx==NULL || mtx->mutex_q==NULL){
+        return -1;
     }
-    while(1){
-        if(__sync_lock_test_and_set(&mtx->locked,1)==1){
-            if(mtx->owner_id==running_thread->id){
-                puts("Mutex already owned by the same thread!");
-                return 1;
-            }
-            enqueue(mtx->mutex_q,running_thread);
-            running_thread->curr=BLOCKED;
-            running_thread->waiting_for=mtx->owner_id;
-            running_thread->mutexed=true;
-            running_thread->blocked_from_mutex=mtx;
 
-            enqueue(waiting_q,running_thread);
-            thread_yield();
-        }
-        else{
+    while(1){
+        disable_signal();
+        if(__sync_lock_test_and_set(&mtx->locked, 1)==0){
             mtx->owner_id=running_thread->id;
-            mtx->locked=1;
-            if(mtx->id==-1){
-                puts("Id not given properly ig?");
-                printf("Thread has the idd: %d.\n",running_thread->id);
-                exit(1);
-            }
-            running_thread->mutexed=0;
+            running_thread->mutexed=false;
             running_thread->blocked_from_mutex=NULL;
+            enable_signal();
+            return 0;
         }
+
+        if(mtx->owner_id==running_thread->id){
+            enable_signal();
+            return -1;  // non-recursive mutex
+        }
+
+        running_thread->curr=BLOCKED;
+        running_thread->waiting_for=mtx->owner_id;
+        running_thread->mutexed=true;
+        running_thread->blocked_from_mutex=mtx;
+
+        enqueue(mtx->mutex_q, running_thread);// only this queue
+        enable_signal();
+        thread_yield();
     }
 }
 
@@ -437,8 +448,8 @@ int mutex_unlock(umutex* mtx){
             puts("Mutex is locked by another thread!");
             return -1;
         }
-        __sync_lock_release(&mtx->locked);
         mtx->owner_id=-1;
+        __sync_lock_release(&mtx->locked);
         if(mtx->mutex_q->head!=NULL){
             unblock_threads_from_queue(mtx);
         }
@@ -452,7 +463,7 @@ int mutex_unlock(umutex* mtx){
 
 /*
  This function picks the blocked thread from the waiting queue and sets them to ready and puts them in the ready queue.(mutex)
-  This function is designed to pick up only one thread at a time and push them into the ready queue!
+ This function is designed to pick up only one thread at a time and push them into the ready queue!
 */
 void unblock_threads_from_queue(umutex* mtx){
     if(!mtx || !mtx->mutex_q){
@@ -475,6 +486,7 @@ void unblock_threads_from_queue(umutex* mtx){
     enqueue(ready_q,v_hold);
 }
 
+// Self explanatory :/
 int mutex_destroy(umutex* mtx){
     if(mtx==NULL){
         puts("It is already NULL, what do you need me for?");
@@ -488,11 +500,20 @@ int mutex_destroy(umutex* mtx){
         puts("Locked by another thread, can't be destroyed!");
         return -1;
     }
-    /*
-        Frees the mutex's queue and sets it to NULL ultimately destroying it!
-    */
+
     free(mtx->mutex_q);
     mtx=NULL;
     return 0;
+}
+
+//prints the stats of the thread in any queue which has been passed as an argument!
+void print_stats(queue* q){
+    tcb* temp=q->head;
+    int i=0;
+    while(temp!=NULL){
+        printf("Thread %d is at the position: %d and is waiting for: %d.\n",temp->id,i,temp->waiting_for);
+        temp=temp->next_node;
+        i++;
+    }
 }
 
