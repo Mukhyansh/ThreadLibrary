@@ -1,11 +1,12 @@
-### Benchmarks!
+## Benchmarks
 
-The benchmarks are calculated in a way that it is possible for the user to test this library's performance against the pthread library without changing any syntax and within the same file and code!
+These benchmarks allow the library to be tested against the standard `pthread` library using the **same source file and function syntax**.
 
-*the library by default is running self implemented library's functions regardless of the names of the functions!*
+By default, the benchmark uses the self-implemented user-thread library. The mapping between pthread-style function names and the custom library functions is defined in `uthreads.h`.
 
-**Checkout the uthread.h file for more details!**
+The benchmark computes the dot product of two vectors using multiple threads and measures the total execution time for:
 
-This benchmark calculates result of the vector multiplication of multiple vectors and calculates the total time taken using ~
-1. My threads
-2. Pthreads
+1. The custom user-level thread library  
+2. The standard pthread library  
+
+This makes it possible to compare both implementations under the same workload without rewriting the benchmark code.
