@@ -2,7 +2,7 @@
 
 This is a Preemptive User level Thread Library which simulates green threads using their core functions like create,join,yield etc. 
 
-I have also implemented mutexes (Mutually exclusive locks),Round Robin Scheduler,data structures,event handlers and several benchmarks(metrics). 
+I have also implemented mutexes (Mutually exclusive locks),Round Robin Scheduler, data structures, event handlers and several benchmarks(metrics). 
 
 Benchmarks are for testing against the original pthreads library vs this thread library!
 
