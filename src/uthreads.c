@@ -13,23 +13,32 @@ void schedule();
 void scheduler_roundrobin();
 int setup_handler();
 void find_ready_thread(int thid,tcb** return_value,queue* ready_q);
-void mutex_init(umutex* mtx);
+int mutex_init(umutex* mtx);
 int mutex_unlock(umutex* mtx);
 int mutex_lock(umutex* mtx);
 int mutex_destroy(umutex* mtx);
 void unblock_threads_from_queue(umutex* mtx);
 void print_stats(queue* q); //filler function for inner insights~
 
-tcb* all_threads[MAX]; //Useful for the join function , explained below
-int completed[MAX]; //Useful for the join function, explained below
+/*
+Wrapper functions to match the syntax with the pthread library functions!
+*/
+
+int uthread_create(int* threadid,void* attr_p,void *(*start_routine)(void *),void* arg);
+int uthread_join(int tid,void** attr_p);
+int umutex_init(umutex* mtx,void* attr);
+
+
+tcb *all_threads[MAX];
+int completed[MAX];
 struct timeval schedule_timestamp;
-tcb* main_thread;
-struct itimerval timer_val; // stores the timestamps for creation,first_run and completion.
-queue* ready_q; //queue for round robin (running)
-queue* waiting_q; //queue for round robin (ready)
-ucontext_t* scheduler_context; //context for the scheduler
-ucontext_t* finished_context; //context for something after a thread has finished executing
-tcb* running_thread;
+tcb *main_thread;
+struct itimerval timer_val;
+queue *ready_q;
+queue *waiting_q;
+ucontext_t *scheduler_context;
+ucontext_t *finished_context;
+tcb *running_thread;
 
 static double turnaround_avg; // completion time - start time
 static double response_avg; // first run time - created time
@@ -363,7 +372,7 @@ int thread_join(int tid,void** value_pointer,queue* ready_q){
     enqueue(waiting_q,running_thread);
     thread_yield();
 
-    if(*value_pointer!=NULL){
+    if(value_pointer!=NULL){
         *value_pointer=returnables[tid];
     }
 
@@ -393,16 +402,17 @@ void enable_signal(){
 }
 
 //Initializes the mutex!
-void mutex_init(umutex* mtx){
+int mutex_init(umutex* mtx){
     if(!mtx){
         printf("Error creating mutex!\n");
-        exit(EXIT_FAILURE);
+        return -1;
     }   
     mtx->id=mutex_count;
     mtx->locked=0;
     mtx->owner_id=-1;
     mtx->mutex_q=queue_init();
     mutex_count++;
+    return 0;
 }
 
 //Locks the mutex so that only one thread can access it at a time.
@@ -517,3 +527,25 @@ void print_stats(queue* q){
     }
 }
 
+int uthread_create(int* threadid,void* attr_p,void *(*start_routine)(void *),void* arg){
+    (void)attr_p;
+    if(threadid==NULL || start_routine==NULL){
+        return -1;
+    }
+
+    int id=thread_create(0,start_routine,arg);
+    if(id<0){
+        return -1;
+    }
+    *threadid=id;
+    return 0;
+}
+
+int uthread_join(int tid,void** attr_p){
+    return thread_join(tid,attr_p,ready_q);
+}
+
+int umutex_init(umutex* mtx,void* attr){
+    (void)attr;
+    return mutex_init(mtx);
+}

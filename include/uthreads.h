@@ -11,7 +11,7 @@
 #include <signal.h>
 #include<unistd.h>
 #include<time.h>
-// #include<pthread.h> will include it for testing against user-threads
+#include<pthread.h> //will include it for testing against user-threads
 #include<time.h>
 #include<stdbool.h>
 #include<sys/time.h>
@@ -20,23 +20,24 @@
 #include<sys/socket.h>
 #include<sys/signal.h>
 
-#define USE_THIS_LIBRARY 1 //Comment this if you want to use the pthread library for testiing on the benchmarks!
+#define USE_THIS_LIBRARY 1 //Comment this out if you want to use the pthread library for testing on the benchmarks!
 #define TIME_SLICE 20
 #define MAX 256
 
 typedef long long ll;
 typedef unsigned int uint;
 
-tcb* all_threads[MAX];
-int completed[MAX];
-struct timeval schedule_timestamp;
-tcb* main_thread;
-struct itimerval timer_val;
-queue* ready_q; 
-queue* waiting_q; 
-ucontext_t* scheduler_context; 
-ucontext_t* finished_context;
-tcb* running_thread;
+
+extern tcb* all_threads[MAX]; //Useful for the join function , explained below
+extern int completed[MAX]; //Useful for the join function, explained below
+extern struct timeval schedule_timestamp;
+extern tcb* main_thread;
+extern struct itimerval timer_val; // stores the timestamps for creation,first_run and completion.
+extern queue* ready_q; //queue for round robin (running)
+extern queue* waiting_q; //queue for round robin (ready)
+extern ucontext_t* scheduler_context; //context for the scheduler
+extern ucontext_t* finished_context; //context for something after a thread has finished executing
+extern tcb* running_thread;
 
 void init();
 void thread_wrapper(void*(*start)(void*),void* arg);
@@ -50,26 +51,33 @@ void schedule();
 void scheduler_roundrobin();
 int setup_handler();
 void find_ready_thread(int thid,tcb** return_value,queue* ready_q);
-void mutex_init(umutex* mtx);
+int mutex_init(umutex* mtx);
 int mutex_unlock(umutex* mtx);
 int mutex_lock(umutex* mtx);
 int mutex_destroy(umutex* mtx);
 void unblock_threads_from_queue(umutex* mtx);
 void print_stats(queue* q);
-
+int uthread_create(int* threadid,void* attr_p,void *(*start_routine)(void *),void* arg);
+int uthread_join(int tid,void** attr_p);
+int umutex_init(umutex* mtx,void* attr);
 
 //Kind off like an alias/boilerplate for my thread libary functions to act like pthread library functions
-//Can change when the macro is commented out!
+//Can be changed when the macro is commented out!
+
 #ifdef USE_THIS_LIBRARY
+
+typedef int uthread_t;
+#define pthread_t uthread_t
 #define pthread_mutex_t umutex
-#define pthread_create thread_create
-#define pthread_join thread_join
+#define pthread_create uthread_create
+#define pthread_join uthread_join
 #define pthread_yield thread_yield
 #define pthread_exit thread_exit
-#define pthread_mutex_init mutex_init
+#define pthread_mutex_init umutex_init
 #define pthread_mutex_lock mutex_lock
 #define pthread_mutex_unlock mutex_unlock
-#define pthread_mutex_destoy mutex_destroy
+#define pthread_mutex_destroy mutex_destroy
+
 #endif
 
 

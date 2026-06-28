@@ -58,14 +58,14 @@ int main(int argc,char* argv[]){
         left[i]=i;
     }
 
-    pthread_mutex_init(&result_mutex);
+    pthread_mutex_init(&result_mutex,NULL);
 
     clock_gettime(CLOCK_MONOTONIC,&start);
 
     for(int i=0;i<THREAD_NUM;i++){
         thread_args[i]=i;
         //lol my current thread_create function generate its own id so we donot need to worry about the first argument!
-        thread_ids[i]=pthread_create(0,calculate,&thread_args);
+        thread_ids[i]=pthread_create(0,NULL,calculate,&thread_args);
         if(thread_ids[i]==-1){
             puts("Thread creation failed!");
             return -1;
@@ -76,7 +76,7 @@ int main(int argc,char* argv[]){
     allowing the worker threads to start running.
     */
     for(int i=0;i<THREAD_NUM;i++){
-        if(pthread_join(thread_args[i],&ignored_return_value,ready_q)==-1){
+        if(pthread_join(thread_args[i],&ignored_return_value)==-1){
             puts("Thread join failed!");
             return -1;
         }
@@ -94,7 +94,7 @@ int main(int argc,char* argv[]){
     else{
         puts("They failed!");
     }
-    pthread_mutex_destoy(&result_mutex);
+    pthread_mutex_destroy(&result_mutex);
     return 0;
     
 }

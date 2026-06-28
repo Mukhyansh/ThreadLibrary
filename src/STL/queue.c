@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-// #include "../include/uthreads.h"
-#include "include/queue.h"
+#include "../../include/uthreads.h"
+#include "../../include/queue.h"
 
 
 queue* queue_init(){
@@ -47,7 +47,7 @@ void dequeue(queue* q,tcb** pop_node){
 
 int remove_from_queue(queue* q,int tid,tcb** pop_node){
     if(q->head==NULL){
-        return NULL;
+        return -1;
     }
     *pop_node=NULL;
     tcb* current=q->head;

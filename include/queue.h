@@ -1,7 +1,7 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-// #include"uthreads.h"
+#include"uthreads.h"
 
 typedef struct queue queue;
 typedef struct umutex umutex;
@@ -14,28 +14,28 @@ typedef enum{
 }state;
 
 typedef struct tcb{
-    int id;
-    state curr;
-    ucontext_t* context;
-    bool mutexed;
-    int waiting_thread;
-    int waiting_for;
+    int id; //thread id
+    state curr; //status of the thread
+    ucontext_t* context; //context/place of the thread at a time
+    bool mutexed; //whether it is locked or not
+    int waiting_thread; //thread which is waiting
+    int waiting_for; //thread it is waiting for
     void* size_of_stack;
     void* stack;
-    long time_taken;
-    umutex* blocked_from_mutex;
-    struct timeval start_time;
+    long time_taken; //time taken for the thread to complete the process
+    umutex* blocked_from_mutex; //whether mutex has put them in blocked queue
+    struct timeval start_time; 
     struct timeval finish_time;
     struct timeval created_time;
-    struct tcb* next_node;
+    struct tcb* next_node; //link to the next thread
 }tcb;
 
-typedef struct queue{
+struct queue{
     tcb* head;
     tcb* tail;
 };
 
-typedef struct umutex{
+struct umutex{
     bool locked; //check if mutex is locked or not
     int id; //id of the mutex
     int owner_id; // id of the thread inside critical zone
