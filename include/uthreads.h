@@ -64,21 +64,26 @@ int umutex_init(umutex* mtx,void* attr);
 //Kind off like an alias/boilerplate for my thread libary functions to act like pthread library functions
 //Can be changed when the macro is commented out!
 
-#ifdef USE_THIS_LIBRARY
 
-typedef int uthread_t;
-#define pthread_t uthread_t
-#define pthread_mutex_t umutex
-#define pthread_create uthread_create
-#define pthread_join uthread_join
-#define pthread_yield thread_yield
-#define pthread_exit thread_exit
-#define pthread_mutex_init umutex_init
-#define pthread_mutex_lock mutex_lock
-#define pthread_mutex_unlock mutex_unlock
-#define pthread_mutex_destroy mutex_destroy
+/*
+Still figuring this out!
+*/
 
-#endif
+// #ifdef USE_THIS_LIBRARY 
+
+// typedef int uthread_t;
+// #define pthread_t uthread_t
+// #define pthread_mutex_t umutex
+// #define pthread_create thread_create
+// #define pthread_join uthread_join
+// #define pthread_yield thread_yield
+// #define pthread_exit thread_exit
+// #define pthread_mutex_init umutex_init
+// #define pthread_mutex_lock mutex_lock
+// #define pthread_mutex_unlock mutex_unlock
+// #define pthread_mutex_destroy mutex_destroy
+
+// #endif
 
 
 /*

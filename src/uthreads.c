@@ -549,3 +549,13 @@ int umutex_init(umutex* mtx,void* attr){
     (void)attr;
     return mutex_init(mtx);
 }
+
+void* func(void* arg){
+    printf("Hello");
+    return 0;
+}
+
+// int main(){
+//     printf("\n%d",thread_create(0,func,0));
+//     return 0;
+// }
