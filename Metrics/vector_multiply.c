@@ -16,15 +16,19 @@ static int thread_args[THREAD_NUM];
 
 //Main logic for calculating the result using threads
 void* calculate(void* arg){
-    int start=*(int*)arg;
+    int tid=*(int*)arg;
+
+    int chunk=VECTOR_SIZE/THREAD_NUM;
+    int start=tid*chunk;
+    int end=(tid == THREAD_NUM - 1) ? VECTOR_SIZE : start+chunk;
     long long part_sum=0;
-    for(int i=start;i<VECTOR_SIZE;i++){
-        part_sum+=right[i]*left[i];
+    for(int i=start;i<end;i++){
+        part_sum += right[i] * left[i];
     }
     mutex_lock(&result_mutex);
-    final_sum++;
+    final_sum += part_sum;
     mutex_unlock(&result_mutex);
-    
+
     return NULL;
 }
 
@@ -65,7 +69,7 @@ int main(int argc,char* argv[]){
     for(int i=0;i<THREAD_NUM;i++){
         thread_args[i]=i;
         //lol my current thread_create function generate its own id so we donot need to worry about the first argument!
-        thread_ids[i]=thread_create(0,calculate,&thread_args);
+        thread_ids[i]=thread_create(0,calculate,&thread_args[i]);
         if(thread_ids[i]==-1){
             puts("Thread creation failed!");
             return -1;
@@ -76,7 +80,7 @@ int main(int argc,char* argv[]){
     allowing the worker threads to start running.
     */
     for(int i=0;i<THREAD_NUM;i++){
-        if(thread_join(thread_args[i],&ignored_return_value,ready_q)==-1){
+        if(thread_join(thread_ids[i],&ignored_return_value,ready_q)==-1){
             puts("Thread join failed!");
             return -1;
         }
@@ -87,7 +91,7 @@ int main(int argc,char* argv[]){
 
     printf("Parallel Result using Threads: %lld.\n",final_sum);
     printf("Verified sum by manual calculation is: %lld.\n",actual);
-    printf("Running Time is: %lld microseconds.\n",elapsed_time);
+    printf("Running Time is: %lld microseconds.\n",elapsed_time(start,end));
     if(final_sum==actual){
         printf("Mutex and the thread library worked correctly!\n");
     }

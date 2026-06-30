@@ -28,7 +28,6 @@ int uthread_create(int* threadid,void* attr_p,void *(*start_routine)(void *),voi
 int uthread_join(int tid,void** attr_p);
 int umutex_init(umutex* mtx,void* attr);
 
-
 tcb *all_threads[MAX];
 int completed[MAX];
 struct timeval schedule_timestamp;
@@ -550,12 +549,8 @@ int umutex_init(umutex* mtx,void* attr){
     return mutex_init(mtx);
 }
 
+//test function
 void* func(void* arg){
     printf("Hello");
     return 0;
 }
-
-// int main(){
-//     printf("\n%d",thread_create(0,func,0));
-//     return 0;
-// }
