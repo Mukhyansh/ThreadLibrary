@@ -526,6 +526,10 @@ void print_stats(queue* q){
     }
 }
 
+/*
+Definition of the wrapper functions!
+*/
+
 int uthread_create(int* threadid,void* attr_p,void *(*start_routine)(void *),void* arg){
     (void)attr_p;
     if(threadid==NULL || start_routine==NULL){
