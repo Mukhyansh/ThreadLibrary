@@ -4,7 +4,7 @@ A lightweight **preemptive user-level threading library** implemented in C using
 
 ---
 
-***Do look at the comments I added throughout the project for  better understanding of the workflow but keep in mind that some definitions I added in those comments for the functions for my understanding and can be vague or slightly misleading to the actual description of the function you might find on the web***
+***Feel free to look at the comments I added throughout the project for  better understanding of the workflow but keep in mind that some definitions I added in those comments for the functions were for my understanding and can be vague or slightly misleading to the actual description of the function you might find on the web!***
 
 ## Features
 
