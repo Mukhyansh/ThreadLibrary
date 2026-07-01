@@ -5,6 +5,8 @@
 #define _POSIX_C_SOURCE 200809L
 #endif
 
+// #define USE_THIS_LIBRARY 1 //comment this out if you would like to use the pthreads library!
+
 #include<stdio.h>
 #include<ucontext.h>
 #include<stdlib.h>
@@ -20,7 +22,6 @@
 #include<sys/socket.h>
 #include<sys/signal.h>
 
-#define USE_THIS_LIBRARY 1 //Comment this out if you want to use the pthread library for testing on the benchmarks!
 #define TIME_SLICE 20
 #define MAX 256
 
@@ -63,27 +64,30 @@ int umutex_init(umutex* mtx,void* attr);
 
 //Kind off like an alias/boilerplate for my thread libary functions to act like pthread library functions
 //Can be changed when the macro is commented out!
-
-
 /*
 Still figuring this out!
 */
 
-// #ifdef USE_THIS_LIBRARY 
+#ifdef USE_THIS_LIBRARY
 
-// typedef int uthread_t;
-// #define pthread_t uthread_t
-// #define pthread_mutex_t umutex
-// #define pthread_create thread_create
-// #define pthread_join uthread_join
-// #define pthread_yield thread_yield
-// #define pthread_exit thread_exit
-// #define pthread_mutex_init umutex_init
-// #define pthread_mutex_lock mutex_lock
-// #define pthread_mutex_unlock mutex_unlock
-// #define pthread_mutex_destroy mutex_destroy
+typedef int uthread_t;
+#define pthread_t uthread_t
+#define pthread_mutex_t umutex
 
-// #endif
+/*
+Use the pthread-shaped wrappers here, not the lower-level internal functions.
+That keeps the call signatures consistent with the standard library.
+*/
+#define pthread_create uthread_create
+#define pthread_join uthread_join
+#define pthread_yield thread_yield
+#define pthread_exit thread_exit
+#define pthread_mutex_init umutex_init
+#define pthread_mutex_lock mutex_lock
+#define pthread_mutex_unlock mutex_unlock
+#define pthread_mutex_destroy mutex_destroy
+
+#endif
 
 
 /*

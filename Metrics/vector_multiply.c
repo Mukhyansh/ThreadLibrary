@@ -9,9 +9,9 @@ static long long right[VECTOR_SIZE];
 static long long left[VECTOR_SIZE];
 static long long final_sum=0;
 
-static umutex result_mutex;
+static pthread_mutex_t result_mutex;
 
-static int thread_ids[THREAD_NUM];
+static pthread_t thread_ids[THREAD_NUM];
 static int thread_args[THREAD_NUM];
 
 //Main logic for calculating the result using threads
@@ -25,9 +25,9 @@ void* calculate(void* arg){
     for(int i=start;i<end;i++){
         part_sum += right[i] * left[i];
     }
-    mutex_lock(&result_mutex);
+    pthread_mutex_lock(&result_mutex);
     final_sum += part_sum;
-    mutex_unlock(&result_mutex);
+    pthread_mutex_unlock(&result_mutex);
 
     return NULL;
 }
@@ -62,15 +62,14 @@ int main(int argc,char* argv[]){
         left[i]=i;
     }
 
-    mutex_init(&result_mutex);
+    pthread_mutex_init(&result_mutex, NULL);
 
     clock_gettime(CLOCK_MONOTONIC,&start);
 
     for(int i=0;i<THREAD_NUM;i++){
         thread_args[i]=i;
         //lol my current thread_create function generate its own id so we donot need to worry about the first argument!
-        thread_ids[i]=thread_create(0,calculate,&thread_args[i]);
-        if(thread_ids[i]==-1){
+        if(pthread_create(&thread_ids[i], NULL, calculate, &thread_args[i])!=0){
             puts("Thread creation failed!");
             return -1;
         }
@@ -80,7 +79,7 @@ int main(int argc,char* argv[]){
     allowing the worker threads to start running.
     */
     for(int i=0;i<THREAD_NUM;i++){
-        if(thread_join(thread_ids[i],&ignored_return_value,ready_q)==-1){
+        if(pthread_join(thread_ids[i],&ignored_return_value)!=0){
             puts("Thread join failed!");
             return -1;
         }
@@ -98,7 +97,7 @@ int main(int argc,char* argv[]){
     else{
         puts("They failed!");
     }
-    mutex_destroy(&result_mutex);
+    pthread_mutex_destroy(&result_mutex);
     return 0;
     
 }
